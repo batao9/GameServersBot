@@ -66,24 +66,47 @@ class DiscordBot:
             return
 
         command, *args = message.content.split(" ", 1)
-        prefix, action = command.split(".", 1) if "." in command else (None, None)
+        if command == "r.help":
+            await self._handle_r_help(message)
+        elif command == "r.status":
+            await self._handle_r_status(message)
+        else:
+            prefix, action = command.split(".", 1) if "." in command else (None, None)
+            if prefix in self.servers:
+                server = self.servers[prefix]
+                if action == "start":
+                    await self._handle_start_command(message, server, prefix)
+                elif action == "stop":
+                    await self._handle_stop_command(message, server, prefix)
+                elif action == "kill":
+                    await self._handle_kill_command(message, server, prefix)
+                elif action == "help":
+                    await self._handle_help_command(message, prefix)
+                elif action == "status":
+                    await self._handle_status_command(message, prefix)
+                elif action == "cmd" and self.admin_only[prefix]:
+                    await self._handle_cmd_command(message, server, prefix, *args)
+                else:
+                    await message.channel.send(f"無効なコマンドです。`{prefix}.help`で利用可能なコマンドを確認してください。")
 
-        if prefix in self.servers:
-            server = self.servers[prefix]
-            if action == "start":
-                await self._handle_start_command(message, server, prefix)
-            elif action == "stop":
-                await self._handle_stop_command(message, server, prefix)
-            elif action == "kill":
-                await self._handle_kill_command(message, server, prefix)
-            elif action == "help":
-                await self._handle_help_command(message, prefix)
-            elif action == "status":
-                await self._handle_status_command(message)
-            elif action == "cmd" and self.admin_only[prefix]:
-                await self._handle_cmd_command(message, server, prefix, *args)
-            else:
-                await message.channel.send(f"無効なコマンドです。`{prefix}.help`で利用可能なコマンドを確認してください。")
+    async def _handle_r_help(self, message):
+        """r.helpコマンドの処理"""
+        help_message = "利用可能なゲームサーバーとコマンド:\n"
+        for prefix, server in self.servers.items():
+            help_message += (
+                f"- **{prefix}**: `{prefix}.help`で詳細を確認\n"
+                f"  コマンド例: `{prefix}.start`, `{prefix}.stop`, `{prefix}.status`\n"
+            )
+        help_message += "\n全体の状態を確認するには`r.status`を使用してください。"
+        await message.channel.send(f"{help_message}")
+
+    async def _handle_r_status(self, message):
+        """r.statusコマンドの処理"""
+        status_message = "現在のサーバーステータス:\n"
+        for prefix, server in self.servers.items():
+            status_message += f"- {prefix}: {'Running' if server.is_running() else 'Stopped'}\n"
+        await message.channel.send(f"{status_message}")
+
 
     async def _handle_start_command(self, message, server, prefix):
         """サーバー起動コマンドの処理"""
@@ -134,24 +157,28 @@ class DiscordBot:
     async def _handle_help_command(self, message, prefix):
         """ヘルプコマンドの処理"""
         # 利用可能なコマンドを動的に生成
-        help_message = f"**{prefix}.help**: このヘルプを表示\n"
-        help_message += f"**{prefix}.start**: サーバーを起動\n"
-        help_message += f"**{prefix}.stop**: サーバーを停止\n"
-        help_message += f"**{prefix}.kill**: サーバーを強制終了\n"
-        help_message += f"**{prefix}.status**: サーバーの状態を確認\n"
+        game_name = next(
+            (game["name"] for game in self.config.games if game["prefix"] == prefix),
+            "Unknown Game"
+        )
+        help_message = f"**{game_name} ({prefix})** の利用可能なコマンド:\n"
+        help_message += f"`{prefix}.help`: このヘルプを表示\n"
+        help_message += f"`{prefix}.start`: サーバーを起動\n"
+        help_message += f"`{prefix}.stop`: サーバーを停止\n"
+        help_message += f"`{prefix}.kill`: サーバーを強制終了\n"
+        help_message += f"`{prefix}.status`: サーバーの状態を確認\n"
 
         # admin_only_commands が true の場合のみ .cmd を追加
         if self.admin_only[prefix]:
-            help_message += f"**{prefix}.cmd <コマンド>**: 任意のコマンドを実行 (管理者のみ)\n"
+            help_message += f"`{prefix}.cmd <コマンド>`: 任意のコマンドを実行 (管理者のみ)\n"
 
-        await message.channel.send(f"```\n{help_message}\n```")
+        await message.channel.send(f"{help_message}")
 
-    async def _handle_status_command(self, message):
-        """サーバーステータス一覧コマンドの処理"""
-        status_message = "現在のサーバーステータス:\n"
-        for prefix, status in self.game_status.items():
-            status_message += f"- {prefix}: {status}\n"
-        await message.channel.send(f"```\n{status_message}\n```")
+    async def _handle_status_command(self, message, prefix):
+        """特定のゲームサーバーの状態を確認するコマンド"""
+        server = self.servers[prefix]
+        status = "Running" if server.is_running() else "Stopped"
+        await message.channel.send(f"{prefix}: {status}")
 
     def run(self):
         """ボットを起動"""
