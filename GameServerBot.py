@@ -53,7 +53,8 @@ class DiscordBot:
     @tasks.loop(seconds=1)
     async def _update_presence(self):
         """サーバーの状態をチェックし、プレゼンスを更新"""
-        presence_message = " | ".join(
+        presence_message = "r.help | "
+        presence_message += " | ".join(
             f"{prefix}: {'Running' if server.is_running() else 'Stopped'}"
             for prefix, server in self.servers.items()
         )
