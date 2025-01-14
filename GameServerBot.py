@@ -41,6 +41,7 @@ class DiscordBot:
         async def on_ready():
             """起動時の処理"""
             print(f'ログインしました: {client.user.name} (ID: {client.user.id})')
+            self._update_presence.start()
 
         @client.event
         async def on_message(message):
@@ -48,7 +49,17 @@ class DiscordBot:
             await self._handle_message(message)
 
         return client
-
+    
+    @tasks.loop(seconds=1)
+    async def _update_presence(self):
+        """サーバーの状態をチェックし、プレゼンスを更新"""
+        presence_message = " | ".join(
+            f"{prefix}: {'Running' if server.is_running() else 'Stopped'}"
+            for prefix, server in self.servers.items()
+        )
+        # Discordのプレゼンスを更新
+        await self.client.change_presence(activity=discord.Game(name=presence_message))
+        
     async def _handle_message(self, message):
         """メッセージのハンドリング"""
         if message.author.bot:
