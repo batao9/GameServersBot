@@ -9,6 +9,9 @@
 
 - **複数のゲームサーバーを管理**:
   - 各ゲームサーバーに対応するコマンド（例: `mc.start`, `sof.start`）を使用して操作可能。
+- **サーバーの起動・停止**
+  - `<prefix>.start` コマンドで、特定のサーバーを起動。
+  - `<prefix>.stop` コマンドで、特定のサーバーを停止。
 - **サーバーの状態確認**:
   - `r.status` コマンドで、すべてのサーバーの状態を一覧表示。
   - `<prefix>.status` コマンドで、特定のサーバーの状態を確認。
@@ -37,7 +40,7 @@
            {
                "name": "minecraft",
                "prefix": "mc",
-               "runsh": "./path/to/run.sh",
+               "runsh": "Servers/mc/run.sh",
                "stop_method": "command",
                "stop_command": "stop",
                "admin_only_commands": true
@@ -45,7 +48,7 @@
            {
                "name": "sons_of_the_forest",
                "prefix": "sof",
-               "runsh": "./path/to/run.sh",
+               "runsh": "Servers/sof/run.sh",
                "stop_method": "ctrl_c",
                "stop_wait_time": 120,
                "admin_only_commands": false
