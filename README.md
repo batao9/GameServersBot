@@ -47,6 +47,7 @@
                "prefix": "sof",
                "runsh": "./path/to/run.sh",
                "stop_method": "ctrl_c",
+               "stop_wait_time": 120,
                "admin_only_commands": false
            }
        ]
@@ -60,6 +61,7 @@
      - `runsh`: サーバー起動スクリプトのパス。
      - `stop_method`: サーバー停止方法（`command` または `ctrl_c`）。
      - `stop_command`: 停止コマンド（`stop_method` が `command` の場合に必要）。
+     - `stop_wait_time`: 停止コマンド送信後に待機する時間（秒単位）。
      - `admin_only_commands`: 管理者専用コマンドを有効にするかどうか。
 
 4. **ボットを起動**
@@ -120,27 +122,6 @@
 - サーバーのヘルプを表示:
   ```
   mc.help
-  ```
-
-### **Sons of the Forest サーバーの操作**
-- サーバーを起動:
-  ```
-  sof.start
-  ```
-
-- サーバーを停止:
-  ```
-  sof.stop
-  ```
-
-- サーバーの状態を確認:
-  ```
-  sof.status
-  ```
-
-- サーバーのヘルプを表示:
-  ```
-  sof.help
   ```
 
 ---

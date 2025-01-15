@@ -121,7 +121,7 @@ class DiscordBot:
     async def _handle_stop_command(self, message, server, prefix):
         """サーバー停止コマンドの処理"""
         if server.is_running():
-            await message.channel.send('終了します')
+            await message.channel.send(f"{server.stop_wait_time}秒後にサーバーを停止します...")
             await server.stop()
             self.game_status[prefix] = "stopped"  # ステータスを更新
         else:
@@ -195,6 +195,7 @@ class ServerProcess:
         self.stop_command = game_config.get("stop_command", None)
         self.runsh_dir = os.path.dirname(game_config["runsh"])
         self.runsh = os.path.basename(game_config["runsh"])
+        self.stop_wait_time = game_config.get("stop_wait_time", 5)
 
     async def start(self):
         """サーバーを起動"""
@@ -219,13 +220,20 @@ class ServerProcess:
             if self.stop_method == "command" and self.stop_command:
                 self.server.stdin.write(f"{self.stop_command}\n".encode())
                 await self.server.stdin.drain()
+
+                print(f"{self.stop_wait_time}秒後に終了します。")
+                await asyncio.sleep(self.stop_wait_time)
+
                 try:
+                    # プロセスが終了するのを待つ
                     await asyncio.wait_for(self.server.wait(), timeout=15)
                     self.server = None
                 except asyncio.TimeoutError:
                     print("サーバーの停止がタイムアウトしました。強制終了します。")
                     self.kill()
             elif self.stop_method == "ctrl_c":
+                print(f"{self.stop_wait_time}秒後に終了します。")
+                await asyncio.sleep(self.stop_wait_time)
                 self.kill()
         else:
             print("サーバーは既に停止しています")
