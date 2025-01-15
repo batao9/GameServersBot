@@ -206,9 +206,10 @@ class ServerProcess:
                 self.server = await asyncio.create_subprocess_exec(
                     f"./{self.runsh}",
                     cwd=self.runsh_dir,  # 実行ディレクトリを指定
-                    stdin=subprocess.PIPE,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE
+                    preexec_fn=os.setsid,
+                    stdin=asyncio.subprocess.PIPE,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
                 )
             except Exception as e:
                 print(f"サーバー起動中にエラーが発生しました: {e}")
@@ -239,7 +240,7 @@ class ServerProcess:
                 
                 if self.server and self.server.pid:
                     print("サーバーにSIGINTを送信します。")
-                    os.kill(self.server.pid, signal.SIGINT)
+                    os.killpg(os.getpgid(self.server.pid), signal.SIGINT)
 
                 try:
                     # プロセスが終了するのを待つ
