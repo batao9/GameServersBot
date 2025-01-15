@@ -1,4 +1,5 @@
 import os
+import signal
 import subprocess
 import asyncio
 import json
@@ -218,23 +219,36 @@ class ServerProcess:
         """サーバーを停止"""
         if self.is_running():
             if self.stop_method == "command" and self.stop_command:
-                self.server.stdin.write(f"{self.stop_command}\n".encode())
-                await self.server.stdin.drain()
-
                 print(f"{self.stop_wait_time}秒後に終了します。")
                 await asyncio.sleep(self.stop_wait_time)
+
+                self.server.stdin.write(f"{self.stop_command}\n".encode())
+                await self.server.stdin.drain()
 
                 try:
                     # プロセスが終了するのを待つ
                     await asyncio.wait_for(self.server.wait(), timeout=15)
                     self.server = None
+                    print("正常に終了しました。")
                 except asyncio.TimeoutError:
                     print("サーバーの停止がタイムアウトしました。強制終了します。")
                     self.kill()
             elif self.stop_method == "ctrl_c":
                 print(f"{self.stop_wait_time}秒後に終了します。")
                 await asyncio.sleep(self.stop_wait_time)
-                self.kill()
+                
+                if self.server and self.server.pid:
+                    print("サーバーにSIGINTを送信します。")
+                    os.kill(self.server.pid, signal.SIGINT)
+
+                try:
+                    # プロセスが終了するのを待つ
+                    await asyncio.wait_for(self.server.wait(), timeout=15)
+                    self.server = None
+                    print("正常に終了しました。")
+                except asyncio.TimeoutError:
+                    print("サーバーの停止がタイムアウトしました。強制終了します。")
+                    self.kill()
         else:
             print("サーバーは既に停止しています")
 
