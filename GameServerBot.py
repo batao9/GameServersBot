@@ -27,7 +27,7 @@ class DiscordBot:
     def __init__(self, config):
         self.config = config
         self.client = self._initialize_client()
-        self.servers = {game["prefix"]: ServerProcess(game) for game in self.config.games}
+        self.servers = self._load_servers()
         self.game_status = {prefix: "stopped" for prefix in self.servers}  # 初期状態はすべて停止
         self.admin_only = {game["prefix"]: game.get("admin_only_commands", False) for game in self.config.games}
 
@@ -60,7 +60,15 @@ class DiscordBot:
         )
         # Discordのプレゼンスを更新
         await self.client.change_presence(activity=discord.Game(name=presence_message))
-        
+    
+    def _load_servers(self):
+        """設定ファイルからサーバー情報を読み込む"""
+        return {
+            game["prefix"]: ServerProcess(game)
+            for game in self.config.games
+            if game.get("enabled", True)
+        }
+    
     async def _handle_message(self, message):
         """メッセージのハンドリング"""
         if message.author.bot:
@@ -71,6 +79,8 @@ class DiscordBot:
             await self._handle_r_help(message)
         elif command == "r.status":
             await self._handle_r_status(message)
+        elif command == "r.reload":
+            await self._handle_r_reload(message)
         else:
             prefix, action = command.split(".", 1) if "." in command else (None, None)
             if prefix in self.servers:
@@ -90,6 +100,25 @@ class DiscordBot:
                 else:
                     await message.channel.send(f"無効なコマンドです。`{prefix}.help`で利用可能なコマンドを確認してください。")
 
+    async def _handle_r_reload(self, message):
+        """設定ファイルを再読み込みするコマンド"""
+        # 起動中のサーバーがあるか確認
+        running_servers = [prefix for prefix, server in self.servers.items() if server.is_running()]
+        if running_servers:
+            running_list = ", ".join(running_servers)
+            await message.channel.send(f"以下のサーバーが起動中のため、設定ファイルを再読み込みできません:\n{running_list}")
+            return
+
+        try:
+            self.config = Config()
+            self.servers = self._load_servers()
+            self.game_status = {prefix: "stopped" for prefix in self.servers}  # 状態をリセット
+            self.admin_only = {game["prefix"]: game.get("admin_only_commands", False) for game in self.config.games}
+
+            await message.channel.send("設定ファイルを再読み込みしました。")
+        except Exception as e:
+            await message.channel.send(f"設定ファイルの再読み込み中にエラーが発生しました: {e}")
+    
     async def _handle_r_help(self, message):
         """r.helpコマンドの処理"""
         help_message = "利用可能なゲームサーバーとコマンド:\n"
@@ -99,6 +128,7 @@ class DiscordBot:
                 f"  コマンド例: `{prefix}.start`, `{prefix}.stop`, `{prefix}.status`\n"
             )
         help_message += "\n全体の状態を確認するには`r.status`を使用してください。"
+        help_message += "\n設定ファイルの再読み込みを行うには`r.reload`を使用してください。"
         await message.channel.send(f"{help_message}")
 
     async def _handle_r_status(self, message):
@@ -227,7 +257,7 @@ class ServerProcess:
 
                 try:
                     # プロセスが終了するのを待つ
-                    await asyncio.wait_for(self.server.wait(), timeout=15)
+                    await asyncio.wait_for(self.server.wait(), timeout=30)
                     self.server = None
                     print("正常に終了しました。")
                 except asyncio.TimeoutError:
@@ -243,7 +273,7 @@ class ServerProcess:
 
                 try:
                     # プロセスが終了するのを待つ
-                    await asyncio.wait_for(self.server.wait(), timeout=15)
+                    await asyncio.wait_for(self.server.wait(), timeout=30)
                     self.server = None
                     print("正常に終了しました。")
                 except asyncio.TimeoutError:

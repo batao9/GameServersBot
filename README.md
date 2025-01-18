@@ -43,7 +43,8 @@
                "runsh": "Servers/mc/run.sh",
                "stop_method": "command",
                "stop_command": "stop",
-               "admin_only_commands": true
+               "admin_only_commands": true,
+               "enabled": true
            },
            {
                "name": "sons_of_the_forest",
@@ -51,7 +52,8 @@
                "runsh": "Servers/sof/run.sh",
                "stop_method": "ctrl_c",
                "stop_wait_time": 120,
-               "admin_only_commands": false
+               "admin_only_commands": false,
+               "enabled": true
            }
        ]
    }
@@ -66,6 +68,9 @@
      - `stop_command`: 停止コマンド（`stop_method` が `command` の場合に必要）。
      - `stop_wait_time`: 停止コマンド送信後に待機する時間（秒単位）。
      - `admin_only_commands`: 管理者専用コマンドを有効にするかどうか。
+     - **`enabled`**:
+      - `true`: サーバーを有効化（ボットで管理対象にする）。
+      - `false`: サーバーを無効化（ボットで管理対象から外す）。
 
 4. **ボットを起動**
    ```bash
@@ -83,6 +88,10 @@
 
 - **`r.status`**:
   - すべてのゲームサーバーの現在の状態を一覧表示します。
+
+- **`r.reload`**:
+  - 設定ファイル（`config.json`）を再読み込みし、ゲームサーバーの設定を更新します。
+  - サーバーの有効/無効を切り替えるには、`config.json`の`enabled`項目を変更してから`r.reload`を実行してください。
 
 - **`<prefix>.help`**:
   - 特定のゲームサーバーの詳細なコマンドを表示します。
