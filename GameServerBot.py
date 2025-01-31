@@ -122,10 +122,13 @@ class DiscordBot:
     async def _handle_r_help(self, message):
         """r.helpコマンドの処理"""
         help_message = "利用可能なゲームサーバーとコマンド:\n"
-        for prefix, server in self.servers.items():
+        for game in self.config.games:
+            if not game.get("enabled", False): continue
+            name = game["name"]
+            prefix = game["prefix"]
             help_message += (
-                f"- **{prefix}**: `{prefix}.help`で詳細を確認\n"
-                f"  コマンド例: `{prefix}.start`, `{prefix}.stop`, `{prefix}.status`\n"
+                f"- **{name}**:\n"
+                f"   `{prefix}.help`で詳細を確認\n"
             )
         help_message += "\n全体の状態を確認するには`r.status`を使用してください。"
         help_message += "\n設定ファイルの再読み込みを行うには`r.reload`を使用してください。"
